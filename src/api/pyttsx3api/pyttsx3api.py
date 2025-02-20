@@ -34,9 +34,9 @@ class Pyttsx3APIWidget(MDScreen):
             app_instance = App.get_running_app()
             app_instance.api_factory.get_api(api_name).reset_api()
             app_instance.api_factory.get_api(api_name).init_api()
-            log.info("API key valid.")
+            log.info("API initialised")
         except:
-            log.error("API key invalid.")
+            log.error("API initialisation failed")
 
 
 class CustomSpinner(Button):
