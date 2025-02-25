@@ -1,3 +1,5 @@
+import os
+import sys
 import torch
 from TTS.api import TTS
 import logging as log
@@ -9,6 +11,14 @@ from kivy.properties import StringProperty, ListProperty, ObjectProperty
 from ..base import BaseApi, BaseApiSettings
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+base_path = os.path.dirname(os.path.abspath(__file__))
+models_dir = os.path.join(base_path, "models")
+
+# Check whether there is at least one .pth file in the folder
+if not any(file.endswith(".pth") for file in os.listdir(models_dir)):
+    log.error("ERROR: Please download .pth files from https://huggingface.co/AOLCDROM/YourTTS-Fr-En-De-Es/tree/main "
+          "and place them in 'src/api/coquiapi/models'!")
 
 
 class CoquiAPIWidget(MDScreen):
@@ -90,8 +100,9 @@ class CoquiAPISettings(BaseApiSettings):
             (v["display_name"] for v in CoquiAPI.voices if v["internal_name"] == self.voice_text),
             None
         )
+        print(f"self.voice_text = {self.voice_text}")
         if matching_voice:
-            self.widget.voice_selection.text = matching_voice
+            print(f"self.widget.voice_selection.text = {self.widget.voice_selection.text}")
         else:
             log.warning(f"No matching display name for internal name: {self.voice_text}")
 
@@ -133,30 +144,65 @@ class CoquiAPI(BaseApi):
         self.models = []
 
     def get_available_model_names(self):
-        self.models = ["YourTTS", "xtts_v2", "tortoise-v2"]
+        self.models = ["YourTTS", "YourTTS-Fr-En-De-Es", "xtts_v2", "tortoise-v2"]
         return self.models
 
     def get_available_voices(self):
         models = self.get_available_model_names()
 
-        voices = [
-            {"display_name": "en-female1", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-en-5",
+        self.voices = [
+            # Default supported coqui-tts voices
+            {"display_name": "en-female1",
+             "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-en-5",
              "speaker_type": "multi", "model": models[0], "lang": "en"},
-            {"display_name": "en-female2", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-en-5\n",
+            {"display_name": "en-female2",
+             "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-en-5\n",
              "speaker_type": "multi", "model": models[0], "lang": "en"},
             {"display_name": "en-male1", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--male-en-2",
              "speaker_type": "multi", "model": models[0], "lang": "en"},
             {"display_name": "en-male2", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--male-en-2\n",
              "speaker_type": "multi", "model": models[0], "lang": "en"},
-            {"display_name": "pt-female", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-pt-4\n",
+            {"display_name": "pt-female",
+             "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-pt-4\n",
              "speaker_type": "multi", "model": models[0], "lang": "pt-br"},
             {"display_name": "pt-male", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--male-pt-3\n",
              "speaker_type": "multi", "model": models[0], "lang": "pt-br"},
-            {"display_name": "fr-female", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-en-5\n",
+            {"display_name": "fr-female",
+             "internal_name": "tts_models/multilingual/multi-dataset/your_tts--female-en-5\n",
              "speaker_type": "multi", "model": models[0], "lang": "fr-fr"},
             {"display_name": "fr-male", "internal_name": "tts_models/multilingual/multi-dataset/your_tts--male-en-2\n",
              "speaker_type": "multi", "model": models[0], "lang": "fr-fr"},
-            {"display_name": "English", "internal_name": "tts_models/en/multi-dataset/tortoise-v2", "model": models[2]},
+
+            # New trained languages (see https://huggingface.co/AOLCDROM/YourTTS-Fr-En-De-Es)
+            {"display_name": "de-1", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_evak",
+             "speaker_type": "multi", "model": models[1], "lang": "de"},
+            {"display_name": "de-2", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_hok",
+             "speaker_type": "multi", "model": models[1], "lang": "de"},
+            {"display_name": "es-1", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_es1",
+             "speaker_type": "multi", "model": models[1], "lang": "es"},
+            {"display_name": "es-2", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_es2",
+             "speaker_type": "multi", "model": models[1], "lang": "es"},
+            {"display_name": "en-gb", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_ruthg",
+             "speaker_type": "multi", "model": models[1], "lang": "en-gb"},
+            {"display_name": "en-us-1", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_johnw",
+             "speaker_type": "multi", "model": models[1], "lang": "en-us"},
+            {"display_name": "en-us-2", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_lah",
+             "speaker_type": "multi", "model": models[1], "lang": "en-us"},
+            {"display_name": "en-us-3", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_ljs",
+             "speaker_type": "multi", "model": models[1], "lang": "en-us"},
+            {"display_name": "en-us-4", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_p294",
+             "speaker_type": "multi", "model": models[1], "lang": "en-us"},
+            {"display_name": "en-us-5", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_p297",
+             "speaker_type": "multi", "model": models[1], "lang": "en-us"},
+            {"display_name": "en-us-6", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_p299",
+             "speaker_type": "multi", "model": models[1], "lang": "en-us"},
+            {"display_name": "fr-1", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_bern",
+             "speaker_type": "multi", "model": models[1], "lang": "fr"},
+            {"display_name": "fr-2", "internal_name": "src/api/coquiapi/models/best_model_2215201.pth--VCTK_gilles",
+             "speaker_type": "multi", "model": models[1], "lang": "fr"},
+
+            # Tortoise
+            {"display_name": "English", "internal_name": "tts_models/en/multi-dataset/tortoise-v2", "model": models[3]}
         ]
         xtts_v2_lang = ['de', 'en', 'es', 'fr', 'it', 'pt', 'pl', 'tr', 'ru', 'nl', 'cs', 'ar', 'zh-cn', 'hu', 'ko',
                         'ja', 'hi']
@@ -182,16 +228,16 @@ class CoquiAPI(BaseApi):
 
         for lang in xtts_v2_lang:
             for speaker in xtts_v2_speaker:
-                voices.append({
+                self.voices.append({
                     "display_name": f"{speaker} ({lang})",
                     "internal_name": f"tts_models/multilingual/multi-dataset/xtts_v2--{speaker}",
                     "speaker_type": "multi",
-                    "model": models[1],
+                    "model": models[2],
                     "lang": lang
                 })
 
         current_model = self.settings.model_text
-        self.voices = [v for v in voices if v["model"] == current_model]
+        self.voices = [v for v in self.voices if v["model"] == current_model]
         self.voice_mapping = {voice["display_name"]: voice["internal_name"] for voice in self.voices}
         log.info(f"Fetched and set {len(self.voices)} Coqui voices.")
 
@@ -231,10 +277,18 @@ class CoquiAPI(BaseApi):
             speaker_type = selected_voice.get("speaker_type", None)
             lang = selected_voice.get("lang", None)
 
-            # Get model
-            model = self.settings.voice_text.split("--")[0]
-            tts = TTS(model_name=model).to(device)
+            # Get path of model
+            model_path = self.settings.voice_text.split("--")[0]
 
+            # YourTTS-Fr-En-De-Es needs model_path and config_path
+            model_name = self.settings.model_text
+            if model_name == "YourTTS-Fr-En-De-Es":
+                config_path = "src/api/coquiapi/models/config.json"
+                tts = TTS(model_path=model_path, config_path=config_path).to(device)
+            else:
+                tts = TTS(model_name=model_name).to(device)
+
+            # Check if model is multi or single speaker
             if speaker_type == "multi":
                 speaker = self.settings.voice_text.split("--")[-1]
                 # Provide speaker and language for multilanguage voice
