@@ -25,10 +25,6 @@ class EmojiPopup(Popup):
     def __init__(self, text_input, **kwargs):
         super(EmojiPopup, self).__init__(**kwargs)
         self.text_input = text_input
-        # Access the shared ssml tags dictionary from MainScreen
-        self.ssml_tags = MainScreen.ssml_tags
-        # Track the state for each emoji
-        self.tag_state = {emoji: "open" for emoji in self.ssml_tags.keys()}
 
     # Old method to place emoji in textfield
     def insert_emoji(self, emoji):
@@ -68,22 +64,6 @@ class MainScreen(MDScreen):
         "Settings": "settings",
         "About": "about",
         "Exit": None  # NOTE Exit just closes the app and doesn't have an associated screen
-    }
-    ssml_tags = {
-        "⏸️": ('<break time="2s"/>', ""),
-        "😐": ("<emphasis level=\"reduced\">", "</emphasis>"),
-        "🙂": ("<emphasis level=\"moderate\">", "</emphasis>"),
-        "😁": ("<emphasis level=\"strong\">", "</emphasis>"),
-        "🔈": ("<prosody volume=\"x-soft\">", "</prosody>"),
-        "🔉": ("<prosody volume=\"medium\">", "</prosody>"),
-        "🔊": ("<prosody volume=\"x-loud\">", "</prosody>"),
-        "🐌": ("<prosody rate=\"slow\">", "</prosody>"),
-        "🚶": ("<prosody rate=\"medium\">", "</prosody>"),
-        "🏃": ("<prosody rate=\"fast\">", "</prosody>"),
-        "🗣️⬇️": ("<prosody pitch=\"low\">", "</prosody>"),
-        "🗣️⬆️": ("<prosody pitch=\"high\">", "</prosody>"),
-        "🗣️⏫": ("<prosody pitch=\"x-high\">", "</prosody>"),
-        "🌎": ("<lang xml:lang=\"en-US\">", "</lang>")
     }
     supported_text_files = ["txt", "md", "rst", "docx"]
 
@@ -146,7 +126,6 @@ class MainScreen(MDScreen):
             log.error("%s: Error with SSML button: %s", self.__class__.__name__, e)
 
     def load_current_voice(self):
-        app_instance = App.get_running_app()
         current_engine = self.get_current_tts_engine()
 
         try:
