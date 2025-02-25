@@ -12,6 +12,11 @@ readme = "README.md"
 repository = "https://github.com/HackXIt/assist-heidi-speech-jokey"
 keywords = ["speech-synthesis", "ML", "cerebral-pulsy"]
 
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu124"
+priority = "explicit"
+
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"                          # Lower than 3.12 because of kivy compatibility (3.7 - 3.11)
 kivy = { version = "2.3.0", extras = ["base, media"] }
@@ -30,6 +35,8 @@ requests = "^2.32.3"
 openai = "^1.58.1"
 boto3 = "^1.35.86"
 azure-cognitiveservices-speech = "^1.41.1"
+coqui-tts = "^0.25.3"
+torch = { version = "2.6.0+cu124", source = "pytorch" }
 
 [build-system]
 requires = ["poetry-core"]
