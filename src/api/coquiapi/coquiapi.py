@@ -34,7 +34,6 @@ class CoquiAPIWidget(MDScreen):
         super(CoquiAPIWidget, self).__init__(**kwargs)
         self.title = title
         self.name = CoquiAPI.__name__.lower() + "_settings"
-        self.voice_names = [f"{voice['display_name']}" for voice in CoquiAPI.voices]
 
     def on_leave(self, *args):
         log.info("Leaving Coqui settings screen.")
@@ -261,6 +260,7 @@ class CoquiAPI(BaseApi):
             log.error("Voice not found for display name: %s", display_name)
 
     def get_voice_name(self):
+        self.get_available_voices()
         selected_voice = self.__get_selected_voice()
         return selected_voice["display_name"]
 
