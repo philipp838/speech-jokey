@@ -280,13 +280,13 @@ class CoquiAPI(BaseApi):
             # Get path of model
             model_path = self.settings.voice_text.split("--")[0]
 
-            # YourTTS-Fr-En-De-Es needs model_path and config_path
             model_name = self.settings.model_text
             if model_name == "YourTTS-Fr-En-De-Es":
+                # YourTTS-Fr-En-De-Es needs model_path and config_path
                 config_path = "src/api/coquiapi/models/config.json"
                 tts = TTS(model_path=model_path, config_path=config_path).to(device)
             else:
-                tts = TTS(model_name=model_name).to(device)
+                tts = TTS(model_name=model_path).to(device)
 
             # Check if model is multi or single speaker
             if speaker_type == "multi":
