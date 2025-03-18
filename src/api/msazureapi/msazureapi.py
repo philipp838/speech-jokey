@@ -1,4 +1,5 @@
-from pathlib import Path
+import requests
+import re
 import azure.cognitiveservices.speech as speechsdk
 import logging as log
 from kivy.uix.button import Button
@@ -21,7 +22,6 @@ class MSAzureAPIWidget(MDScreen):
         super(MSAzureAPIWidget, self).__init__(**kwargs)
         self.title = title
         self.name = MSAzureAPI.__name__.lower() + "_settings"
-        self.voice_names = [f"{voice['display_name']}" for voice in MSAzureAPI.voices]
 
     def on_leave(self, *args):
         log.info("Leaving OpenAI settings screen.")
@@ -44,18 +44,26 @@ class MSAzureAPIWidget(MDScreen):
             log.error("Microsoft Azure API key invalid.")
 
     def __check_azure_api_key(self):
+        endpoint = f"https://{self.settings.region_text}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+        headers = {
+            "Ocp-Apim-Subscription-Key": self.settings.api_key_text
+        }
+
         try:
-            speech_config = speechsdk.SpeechConfig(
-                subscription=self.settings.api_key_text,
-                region=self.settings.region_text
-            )
-            voices_result = speechsdk.VoicesListResult(speech_config)
-            if not voices_result:
+            # Send a POST request to the token endpoint
+            response = requests.post(endpoint, headers=headers)
+
+            # Check if the response status is 200 (OK)
+            if response.status_code == 200:
+                return True
+            else:
+                print(f"Invalid API key or error: {response.status_code} - {response.text}")
                 return False
-            return True
-        except Exception:
-            log.error(f"API initialization failed")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error while connecting to Azure Speech API: {e}")
             return False
+
 
 class CustomSpinner(Button):
     def __init__(self, options, **kwargs):
@@ -137,6 +145,7 @@ class MSAzureAPISettings(BaseApiSettings):
     def update_settings(self, instance, value):
         self.api_key_text = self.widget.api_key_input.text
         self.region_text = self.widget.region_input.text
+        self.voice_text = self.widget.voice_selection.text
 
         selected_voice = next(
             (v for v in MSAzureAPI.voices if v["display_name"] == self.widget.voice_selection.text),
@@ -148,22 +157,7 @@ class MSAzureAPISettings(BaseApiSettings):
 
 
 class MSAzureAPI(BaseApi):
-    voices = [
-        {"display_name": "Ingrid (de-AT)", "internal_name": "de-AT-IngridNeural", "language": "de-AT"},
-        {"display_name": "Jonas (de-AT)", "internal_name": "de-AT-JonasNeural", "language": "de-AT"},
-        {"display_name": "Seraphina (de-DE)", "internal_name": "de-DE-SeraphinaMultilingualNeural", "language": "de-DE"},
-        {"display_name": "Florian (de-DE)", "internal_name": "de-DE-FlorianMultilingualNeural", "language": "de-DE"},
-        {"display_name": "Katja (de-DE)", "internal_name": "de-DE-KatjaNeural", "language": "de-DE"},
-        {"display_name": "Leni (de-CH)", "internal_name": "de-CH-LeniNeural", "language": "de-CH"},
-        {"display_name": "Jan (de-CH)", "internal_name": "de-CH-JanNeural", "language": "de-CH"},
-        {"display_name": "Ava (en-US)", "internal_name": "en-US-AvaMultilingualNeural", "language": "en-US"},
-        {"display_name": "Andrew (en-US)", "internal_name": "en-US-AndrewMultilingualNeural", "language": "en-US"},
-        {"display_name": "Derek (en-US)", "internal_name": "en-US-DerekMultilingualNeural", "language": "en-US"},
-        {"display_name": "Ada (en-GB)", "internal_name": "en-GB-AdaMultilingualNeural", "language": "en-GB"},
-        {"display_name": "Libby (en-GB)", "internal_name": "en-GB-LibbyNeural", "language": "en-GB"},
-        {"display_name": "Ryan (en-GB)", "internal_name": "en-GB-RyanNeural", "language": "en-GB"}
-    ]
-    voice_mapping = {voice["display_name"]: voice["internal_name"] for voice in voices}
+    voices = []
 
     ssml_tags = {
         "⏸️": ('<break time="2s"/>', ""),
@@ -173,6 +167,12 @@ class MSAzureAPI(BaseApi):
         "🔈": ("<prosody volume=\"x-soft\">", "</prosody>"),
         "🔉": ("<prosody volume=\"medium\">", "</prosody>"),
         "🔊": ("<prosody volume=\"x-loud\">", "</prosody>"),
+        "🐌": ("<prosody rate=\"slow\">", "</prosody>"),
+        "🚶": ("<prosody rate=\"medium\">", "</prosody>"),
+        "🏃": ("<prosody rate=\"fast\">", "</prosody>"),
+        "🗣️⬇️": ("<prosody pitch=\"low\">", "</prosody>"),
+        "🗣️⬆️": ("<prosody pitch=\"high\">", "</prosody>"),
+        "🗣️⏫": ("<prosody pitch=\"x-high\">", "</prosody>"),
         "🌎": ("<lang xml:lang=\"en-US\">", "</lang>")
     }
 
@@ -182,6 +182,7 @@ class MSAzureAPI(BaseApi):
 
     def init_api(self):
         self.settings.load_settings()
+        self.settings.widget.voice_names = self.get_available_voice_names()
 
     def reset_api(self):
         self.voices = []
@@ -196,10 +197,51 @@ class MSAzureAPI(BaseApi):
     def text_from_api_format(self, text):
         return text
 
+    def get_available_voices(self):
+        try:
+            # Initialize Speech Config
+            self.speech_config = speechsdk.SpeechConfig(
+                subscription=self.settings.api_key_text,
+                region=self.settings.region_text
+            )
+
+            # Get voices from MS Azure API
+            speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
+            voices_result = speech_synthesizer.get_voices_async().get()
+
+            # Regex pattern for extracting the name
+            pattern = r"(?<=-)[A-Z][a-z]+"
+
+            # Convert voices to the desired format
+            self.voices = []
+            for voice in voices_result.voices:
+                match = re.search(pattern, voice.short_name)
+                voice_name = match.group(0) if match else "Unknown"
+
+                display_name = f"{voice_name} ({voice.locale})"
+
+                self.voices.append({
+                    "display_name": display_name,
+                    "internal_name": voice.short_name,
+                    "language": voice.locale,
+                })
+
+            # Sort voices by language
+            self.voices.sort(key=lambda v: v["language"])
+
+            # Update mapping
+            self.voice_mapping = {voice["display_name"]: voice["internal_name"] for voice in self.voices}
+            log.info(f"Fetched and sorted {len(self.voices)} voices from Microsoft Azure.")
+
+        except Exception as e:
+            log.error(f"Error fetching voices from Microsoft Azure API: {e}")
+
     def get_available_voice_names(self):
+        self.get_available_voices()
         return [voice["display_name"] for voice in self.voices]
 
     def get_voice_name(self):
+        self.get_available_voice_names()
         selected_voice = self.__get_selected_voice()
         return selected_voice["display_name"]
 
@@ -237,7 +279,7 @@ class MSAzureAPI(BaseApi):
         self.set_language()
         lang = self.settings.lang_text
 
-        ssml_text = f"<speak version='1.0' xml:lang='{lang}'><voice name='{voice}'>"
+        ssml_text = f"<speak version='1.0' xml:lang='{lang}'><voice name='{voice}' xmlns:mstts=\"http://www.w3.org/2001/mstts\">"
         for emoji, tags in ssml_tags.items():
             open_tag, close_tag = tags
             if close_tag:  # For emojis with both open and close tags
