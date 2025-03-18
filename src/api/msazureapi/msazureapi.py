@@ -279,7 +279,7 @@ class MSAzureAPI(BaseApi):
         self.set_language()
         lang = self.settings.lang_text
 
-        ssml_text = f"<speak version='1.0' xml:lang='{lang}'><voice name='{voice}'>"
+        ssml_text = f"<speak version='1.0' xml:lang='{lang}'><voice name='{voice}' xmlns:mstts=\"http://www.w3.org/2001/mstts\">"
         for emoji, tags in ssml_tags.items():
             open_tag, close_tag = tags
             if close_tag:  # For emojis with both open and close tags
