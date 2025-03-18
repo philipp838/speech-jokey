@@ -4,6 +4,7 @@
     secret_access_key_input: secret_access_key_input
     region_input: region_input
     voice_selection: voice_name_spinner
+    model_selection: model_spinner
 
     MDBoxLayout:
         orientation: "vertical"
@@ -88,3 +89,14 @@
                         id: voice_name_spinner
                         text: root.get_current_voice() if root.get_current_voice() else 'No voices available'
                         values: root.voice_names
+                MDListItem:
+                    height: "120dp"
+                    MDListItemLeadingIcon:
+                        icon: "account-cog"
+                        pos_hint: {"center_x": .5, "center_y": .5}
+                    MDListItemHeadlineText:
+                        text: 'Model:'
+                    Spinner:
+                        id: model_spinner
+                        text: root.model_names[0] if root.model_names else 'No models available'
+                        values: root.model_names
