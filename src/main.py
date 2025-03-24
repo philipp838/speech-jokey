@@ -1,5 +1,6 @@
 # Kivy
 from kivy.core.text import LabelBase
+from kivy.core.window import Window
 from kivymd.app import MDApp
 from kivy.logger import Logger as log, LOG_LEVELS
 from kivy.config import Config
@@ -13,6 +14,7 @@ from kivymd.uix.list import MDListItemTrailingIcon
 import os
 import sys
 from pathlib import Path
+import time
 
 # Custom
 from screens.about import About
@@ -70,7 +72,35 @@ class SpeechJokey(MDApp):
         self.sm.add_widget(self.settings)
         self.settings.setup_apis(api_factory.apis.values())
         self.sm.add_widget(About(title="About", name="about"))
+
+        Window.maximize()
+        Window.bind(on_mouse_down=self.on_mouse_down)
+        self._last_click_time = 0
+        self._window_state = "maximized"
+
         return self.sm
+
+    def on_mouse_down(self, window, x, y, button, modifiers):
+        if button == 'left':
+            current_time = time.time()
+            if current_time - self._last_click_time < 0.3:
+                self.toggle_window_size()
+            self._last_click_time = current_time
+
+    def toggle_window_size(self):
+        screen_width, screen_height = Window.system_size
+
+        if self._window_state == "maximized":
+            # Umschalten auf halbe Höhe
+            Window.size = (screen_width, screen_height / 2)
+            Window.left = 0
+            Window.top = 32
+            self._window_state = "half_screen"
+        else:
+            # Wieder maximieren
+            Window.maximize()
+            self._window_state = "maximized"
+
 
 if __name__ == '__main__':
     if hasattr(sys, '_MEIPASS'):
