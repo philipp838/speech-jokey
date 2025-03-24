@@ -74,6 +74,11 @@ class MainScreen(MDScreen):
         self.update_current_engine_text()
         self.last_path = None
         self.opened_file = None
+
+        # Save the last file path if file manager not opened for the first time
+        if self.last_path is None:
+            self.last_path = str(App.get_running_app().global_settings.get_tmp_dir())
+
         # FIXME This is used to keep track of the file manager state (open or closed) but is not currently used
         self.manager_open = False
         self.file_manager = MDFileManager(
@@ -199,7 +204,7 @@ class MainScreen(MDScreen):
         if self.last_path is not None:
             path = self.last_path
         else:
-            path = os.path.expanduser("~")
+            path = str(App.get_running_app().global_settings.get_tmp_dir())
         self.file_manager.show(path)
         self.manager_open = True
 
