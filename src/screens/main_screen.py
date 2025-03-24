@@ -72,6 +72,7 @@ class MainScreen(MDScreen):
         self.ids.text_main.font_size = 24
         # Initialize the current TTS engine text
         self.update_current_engine_text()
+        self.file_action_mode = None  # can be 'load' or 'save'
         self.last_path = None
         self.opened_file = None
         # FIXME This is used to keep track of the file manager state (open or closed) but is not currently used
@@ -143,27 +144,45 @@ class MainScreen(MDScreen):
 
     def select_path(self, path):
         log.info("%s: Selected path: %s", self.__class__.__name__, path)
-        if os.path.isfile(path):
+
+        if self.file_action_mode == 'load':
+            if os.path.isfile(path):
+                self.opened_file = os.path.basename(path)
+                self.last_path = os.path.dirname(path)
+            elif os.path.isdir(path):
+                self.last_path = path
+            else:
+                log.error("%s: Invalid path selected: %s", self.__class__.__name__, path)
+        elif self.file_action_mode == 'save':
             self.opened_file = os.path.basename(path)
             self.last_path = os.path.dirname(path)
-            log.debug("%s: File: %s - Path: %s", self.__class__.__name__,
-                      self.opened_file, self.last_path)
-        elif os.path.isdir(path):
-            self.last_path = path
-        else:
-            log.error("%s: Invalid path selected: %s",
-                      self.__class__.__name__, path)
         self.exit_manager()
 
     def exit_manager(self, *args):
-        if all([self.last_path, self.opened_file]):
-            file = os.path.join(self.last_path, self.opened_file)
-            self.load_text_from_file(file)
-        else:
-            log.error("%s: No file selected. Last path: %s",
-                      self.__class__.__name__, self.last_path)
+        if self.file_action_mode == 'load':
+            if all([self.last_path, self.opened_file]):
+                file = os.path.join(self.last_path, self.opened_file)
+                self.load_text_from_file(file)
+            else:
+                log.error("%s: No file selected. Last path: %s", self.__class__.__name__, self.last_path)
+
+        elif self.file_action_mode == 'save':
+            if all([self.last_path, self.opened_file]):
+                file = os.path.join(self.last_path, self.opened_file)
+                file_ext = os.path.splitext(file)[1][1:].lower()
+
+                if file_ext == "docx":
+                    self.save_docx_text(file, self.ids.text_main.text)
+                elif file_ext == "pdf":
+                    log.info("%s: Saving PDFs not supported yet.", self.__class__.__name__)
+                else:
+                    self.save_textfile(file)
+            else:
+                log.error("%s: No file selected to save.", self.__class__.__name__)
+
         self.manager_open = False
         self.file_manager.close()
+        self.file_action_mode = None
 
     def docx_to_text(self, file_path):
         text = ""
@@ -196,26 +215,30 @@ class MainScreen(MDScreen):
                       self.__class__.__name__, file_path, e)
 
     def on_load_file(self):
-        if self.last_path is not None:
-            path = self.last_path
-        else:
-            path = os.path.expanduser("~")
-        self.file_manager.show(path)
+        self.file_action_mode = 'load'
+        initial_path = self.last_path if self.last_path else str(App.get_running_app().global_settings.get_tmp_dir())
+        self.file_manager.show(initial_path)
         self.manager_open = True
 
-    def on_save_file(self):
-        if self.last_path is None or self.opened_file is None:
-            log.error("%s: No file opened to save.", self.__class__.__name__)
-            return
-        file = os.path.join(self.last_path, self.opened_file)
-        file_ext = os.path.splitext(file)[1][1:].lower()
+    # def on_save_file(self):
+    #     if self.last_path is None or self.opened_file is None:
+    #         log.error("%s: No file opened to save.", self.__class__.__name__)
+    #         return
+    #     file = os.path.join(self.last_path, self.opened_file)
+    #     file_ext = os.path.splitext(file)[1][1:].lower()
+    #
+    #     if file_ext == "docx":
+    #         self.save_docx_text(file, self.ids.text_main.text)
+    #     elif file_ext == "pdf":
+    #         log.info("%s: Saving Pdfs not supported yet.", self.__class__.__name__)
+    #     else:
+    #         self.save_textfile(file)
 
-        if file_ext == "docx":
-            self.save_docx_text(file, self.ids.text_main.text)
-        elif file_ext == "pdf":
-            log.info("%s: Saving Pdfs not supported yet.", self.__class__.__name__)
-        else:
-            self.save_textfile(file)
+    def on_save_file(self):
+        self.file_action_mode = 'save'
+        initial_path = self.last_path if self.last_path else str(App.get_running_app().global_settings.get_tmp_dir())
+        self.file_manager.show(initial_path)
+        self.manager_open = True
 
     def load_text_from_file(self, file: str):
         if file is None:
