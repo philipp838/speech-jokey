@@ -77,6 +77,8 @@ class SpeechJokey(MDApp):
         Window.bind(on_mouse_down=self.on_mouse_down)
         self._last_click_time = 0
         self._window_state = "maximized"
+        self._saved_window_size = Window.size
+        self._saved_window_pos = (Window.left, Window.top)
 
         return self.sm
 
@@ -91,14 +93,20 @@ class SpeechJokey(MDApp):
         screen_width, screen_height = Window.system_size
 
         if self._window_state == "maximized":
-            # Umschalten auf halbe Höhe
+            # Save current window size and position
+            self._saved_window_size = Window.size
+            self._saved_window_pos = (Window.left, Window.top)
+
+            # Set window to half height (but full width)
             Window.size = (screen_width, screen_height / 2)
             Window.left = 0
-            Window.top = 32
+            Window.top = 32  # Small space for task bar
             self._window_state = "half_screen"
+
         else:
-            # Wieder maximieren
-            Window.maximize()
+            # Restore full screen
+            Window.size = self._saved_window_size
+            Window.left, Window.top = self._saved_window_pos
             self._window_state = "maximized"
 
 
