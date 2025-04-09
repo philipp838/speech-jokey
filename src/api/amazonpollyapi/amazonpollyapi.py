@@ -7,6 +7,7 @@ from kivymd.uix.screen import MDScreen
 from kivy.app import App
 from kivy.properties import StringProperty, ListProperty, ObjectProperty
 from ..base import BaseApi, BaseApiSettings
+from ..ssml_tags import ssml_tags
 
 
 class AmazonPollyAPIWidget(MDScreen):
@@ -174,23 +175,6 @@ class AmazonPollyAPI(BaseApi):
     models = []
     voices = []
 
-    ssml_tags = {
-        "⏸️": ('<break time="2s"/>', ""),
-        "😐": ("<emphasis level=\"reduced\">", "</emphasis>"),
-        "🙂": ("<emphasis level=\"moderate\">", "</emphasis>"),
-        "😁": ("<emphasis level=\"strong\">", "</emphasis>"),
-        "🔈": ("<prosody volume=\"x-soft\">", "</prosody>"),
-        "🔉": ("<prosody volume=\"medium\">", "</prosody>"),
-        "🔊": ("<prosody volume=\"x-loud\">", "</prosody>"),
-        "🐌": ("<prosody rate=\"slow\">", "</prosody>"),
-        "🚶": ("<prosody rate=\"medium\">", "</prosody>"),
-        "🏃": ("<prosody rate=\"fast\">", "</prosody>"),
-        "🗣️⬇️": ("<prosody pitch=\"low\">", "</prosody>"),
-        "🗣️⬆️": ("<prosody pitch=\"high\">", "</prosody>"),
-        "🗣️⏫": ("<prosody pitch=\"x-high\">", "</prosody>"),
-        "🌎": ("<lang xml:lang=\"en-US\">", "</lang>")
-    }
-
     def __init__(self, settings: AmazonPollyAPISettings):
         super(AmazonPollyAPI, self).__init__(settings)
         self.settings = settings
@@ -326,7 +310,7 @@ class AmazonPollyAPI(BaseApi):
             self.init_polly_connection()
 
             # Perform SSML conversion
-            processed_text = self.emoji_to_ssml_tag(input_text, self.ssml_tags)
+            processed_text = self.emoji_to_ssml_tag(input_text, ssml_tags)
 
             response = self.polly_client.synthesize_speech(
                 Text=processed_text,

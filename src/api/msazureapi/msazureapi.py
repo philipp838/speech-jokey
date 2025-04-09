@@ -8,6 +8,7 @@ from kivymd.uix.screen import MDScreen
 from kivy.app import App
 from kivy.properties import StringProperty, ListProperty, ObjectProperty
 from ..base import BaseApi, BaseApiSettings
+from ..ssml_tags import ssml_tags
 
 
 class MSAzureAPIWidget(MDScreen):
@@ -159,23 +160,6 @@ class MSAzureAPISettings(BaseApiSettings):
 class MSAzureAPI(BaseApi):
     voices = []
 
-    ssml_tags = {
-        "⏸️": ('<break time="2s"/>', ""),
-        "😐": ("<emphasis level=\"reduced\">", "</emphasis>"),
-        "🙂": ("<emphasis level=\"moderate\">", "</emphasis>"),
-        "😁": ("<emphasis level=\"strong\">", "</emphasis>"),
-        "🔈": ("<prosody volume=\"x-soft\">", "</prosody>"),
-        "🔉": ("<prosody volume=\"medium\">", "</prosody>"),
-        "🔊": ("<prosody volume=\"x-loud\">", "</prosody>"),
-        "🐌": ("<prosody rate=\"slow\">", "</prosody>"),
-        "🚶": ("<prosody rate=\"medium\">", "</prosody>"),
-        "🏃": ("<prosody rate=\"fast\">", "</prosody>"),
-        "🗣️⬇️": ("<prosody pitch=\"low\">", "</prosody>"),
-        "🗣️⬆️": ("<prosody pitch=\"high\">", "</prosody>"),
-        "🗣️⏫": ("<prosody pitch=\"x-high\">", "</prosody>"),
-        "🌎": ("<lang xml:lang=\"en-US\">", "</lang>")
-    }
-
     def __init__(self, settings: MSAzureAPISettings):
         super(MSAzureAPI, self).__init__(settings)
         self.settings = settings
@@ -301,7 +285,7 @@ class MSAzureAPI(BaseApi):
         # Synthesize the speech
         synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config, audio_config=None)
 
-        processed_text = self.emoji_to_ssml_tag(input_text, self.ssml_tags)
+        processed_text = self.emoji_to_ssml_tag(input_text, ssml_tags)
         result = synthesizer.speak_ssml_async(processed_text).get()
 
         # Check the result
