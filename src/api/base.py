@@ -166,6 +166,12 @@ class BaseApi(ABC, EventDispatcher, metaclass=ABCMeta):
         """
         pass
 
+    def emoji_to_ssml_tag(self, text: str, ssml_tags: dict) -> str:
+        """
+        Convert the given text to a SSML-format
+        """
+        pass
+
     @abstractmethod
     def text_to_api_format(self, text):
         """
