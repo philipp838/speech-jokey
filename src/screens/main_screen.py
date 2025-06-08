@@ -101,7 +101,7 @@ class MainScreen(MDScreen):
         except Exception as e:
             log.error("%s: Error with SSML button: %s", self.__class__.__name__, e)
 
-    def on_keyboard(self, key):
+    def on_keyboard(self, window, key, scancode, codepoint, modifiers):
         emoji_keyboard_map = {
             282: "⏸️",  # F1
             283: "😐",  # F2
@@ -113,7 +113,7 @@ class MainScreen(MDScreen):
             289: "🐌",  # F8
             290: "🚶",  # F9
             291: "🏃",  # F10
-            292: "🗣️⬆️",  # F11
+            292: "🗣️⬇️",  # F11
             293: "🗣️⬆️",  # F12
         }
 
@@ -124,7 +124,7 @@ class MainScreen(MDScreen):
             return True
         return False
 
-    def load_current_voice(self): 
+    def load_current_voice(self):
         app_instance = App.get_running_app()
         current_engine = self.get_current_tts_engine()
 
