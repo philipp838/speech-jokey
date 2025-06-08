@@ -1,6 +1,6 @@
 # Kivy
 from kivy.uix.floatlayout import FloatLayout
-from kivy.metrics import sp
+from kivy.core.window import Window
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty, StringProperty
@@ -69,6 +69,7 @@ class MainScreen(MDScreen):
 
     def __init__(self, title: str, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
+        Window.bind(on_key_down=self.on_keyboard)
         self.title = title
         self.ids.text_main.font_size = 24
         self.original_font_size = self.ids.text_main.font_size
@@ -124,6 +125,29 @@ class MainScreen(MDScreen):
             emoji_popup.open()
         except Exception as e:
             log.error("%s: Error with SSML button: %s", self.__class__.__name__, e)
+
+    def on_keyboard(self, window, key, scancode, codepoint, modifiers):
+        emoji_keyboard_map = {
+            282: "⏸️",  # F1
+            283: "😐",  # F2
+            284: "🙂",  # F3
+            285: "😁",  # F4
+            286: "🔈",  # F5
+            287: "🔉",  # F6
+            288: "🔊",  # F7
+            289: "🐌",  # F8
+            290: "🚶",  # F9
+            291: "🏃",  # F10
+            292: "🗣️⬇️",  # F11
+            293: "🗣️⬆️",  # F12
+        }
+
+        if key in emoji_keyboard_map:
+            emoji = emoji_keyboard_map[key]
+            popup = EmojiPopup(self.ids.text_main)
+            popup.insert_emoji(emoji)
+            return True
+        return False
 
     def load_current_voice(self):
         current_engine = self.get_current_tts_engine()
